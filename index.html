@@ -13,6 +13,8 @@
   --bg:#eef2ef; --card:#ffffff; --ink:#13262b; --muted:#5d7176; --line:#d5dfdb;
   --teal:#0f766e; --amber:#f2a900; --amber-ink:#3d2b00; --a:#0f766e; --b:#c2410c; --warn:#b42318;
   --field:#f6f9f7;
+  --whatsapp:#25D366;
+  --whatsapp-hover:#1ea952;
 }
 @media (prefers-color-scheme:dark){
   :root:not([data-theme="light"]){
@@ -73,6 +75,39 @@ button:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
 .total{margin-top:16px;background:var(--ink);color:var(--bg);border-radius:14px;padding:14px 18px;display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
 .total b{font-size:1.4rem;font-weight:800}
 .total span{opacity:.8;font-size:.9rem}
+
+/* Share PNG Button */
+.btn-share-png{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  width:100%;
+  margin-top:16px;
+  background-color:var(--whatsapp);
+  color:#ffffff;
+  border:0;
+  border-radius:14px;
+  padding:14px 20px;
+  font-size:1.02rem;
+  font-weight:700;
+  cursor:pointer;
+  box-shadow:0 4px 14px rgba(37,211,102,0.28);
+  transition:background-color .2s ease, transform .1s ease;
+}
+.btn-share-png:hover{
+  background-color:var(--whatsapp-hover);
+}
+.btn-share-png:active{
+  transform:scale(0.98);
+}
+.btn-share-png svg{
+  width:22px;
+  height:22px;
+  fill:currentColor;
+  flex:none;
+}
+
 @media(prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
 </head>
@@ -139,20 +174,28 @@ button:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
   function esc(s){return s.replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]})}
   function val(id){var v=$(id).value; return v===''?NaN:parseFloat(v)}
 
+  var currentData = null;
+
   function render(){
     var bill=val('mbill'), mu=val('munits'), u1=val('u1'), u2=val('u2');
     var n1=esc($('n1').value.trim()||'Pehla'), n2=esc($('n2').value.trim()||'Doosra');
+    var raw_n1 = $('n1').value.trim()||'Pehla';
+    var raw_n2 = $('n2').value.trim()||'Doosra';
+
     if([bill,mu,u1,u2].some(isNaN)){
       out.innerHTML='<div class="empty">After enter the values ,show calculation.</div>';
+      currentData = null;
       return;
     }
     if(bill<0||mu<=0||u1<0||u2<0){
       out.innerHTML='<div class="msg">Main meter ke units 0 se zyada hon aur koi value minus mein na ho.</div>';
+      currentData = null;
       return;
     }
     var tu=u1+u2;
     if(tu<=0){
       out.innerHTML='<div class="msg">Dono sub meters ke units mila kar 0 se zyada hone chahiye.</div>';
+      currentData = null;
       return;
     }
     var per=bill/mu;
@@ -164,12 +207,27 @@ button:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
     var f1=u1+l1, f2=u2+l2;
     var b1=f1*per, b2=f2*per;
     var p1=b1/(b1+b2)*100;
+    var p2=100-p1;
+
+    currentData = {
+      bill: bill, mu: mu, per: per, tbill: tbill, loss: loss,
+      n1: raw_n1, u1: u1, l1: l1, f1: f1, b1: b1, p1: p1,
+      n2: raw_n2, u2: u2, l2: l2, f2: f2, b2: b2, p2: p2,
+      totalFinal: b1 + b2
+    };
+
     function person(cls,n,u,l,f,b){
       return '<div class="person" style="--c:var(--'+cls+')"><p class="who">'+n+'</p><div class="amt">Rs '+nf.format(b)+'</div>'
         +'<dl><div><dt>Units</dt><dd>'+uf.format(u)+'</dd></div>'
         +'<div><dt>Loss units</dt><dd>'+uf.format(l)+'</dd></div>'
         +'<div><dt>Total units</dt><dd>'+uf.format(f)+'</dd></div></dl></div>';
     }
+
+    var shareBtnHtml = '<button type="button" id="sharePngBtn" class="btn-share-png">'
+      + '<svg viewBox="0 0 24 24"><path d="M12.04 2c-5.46 0-9.91 4.45-9.91 9.91 0 1.75.46 3.45 1.32 4.95L2.05 22l5.25-1.38c1.45.79 3.08 1.21 4.74 1.21 5.46 0 9.91-4.45 9.91-9.91 0-2.65-1.03-5.14-2.9-7.01A9.816 9.816 0 0 0 12.04 2m.01 1.67c2.2 0 4.26.86 5.82 2.42a8.225 8.225 0 0 1 2.41 5.83c0 4.54-3.7 8.24-8.24 8.24-1.48 0-2.93-.4-4.2-1.15l-.3-.18-3.12.82.83-3.04-.2-.31a8.19 8.19 0 0 1-1.26-4.38c0-4.54 3.7-8.24 8.24-8.24m4.52 11.66c-.25-.13-1.47-.72-1.7-.81-.23-.08-.39-.13-.56.13-.17.25-.64.81-.79.97-.14.17-.29.19-.54.06-.25-.13-1.06-.39-2.03-1.25-.75-.67-1.26-1.5-1.41-1.75-.15-.25-.02-.39.11-.51.11-.11.25-.29.37-.43.13-.15.17-.25.25-.42.08-.17.04-.31-.02-.44-.06-.13-.56-1.35-.77-1.85-.2-.49-.41-.42-.56-.43h-.48c-.17 0-.44.06-.67.31-.23.25-.88.86-.88 2.1 0 1.24.9 2.45 1.03 2.62.13.17 1.78 2.73 4.32 3.82.6.26 1.07.42 1.44.54.61.19 1.16.17 1.6.1.49-.07 1.47-.6 1.68-1.18.21-.58.21-1.07.15-1.18-.06-.12-.22-.19-.47-.32z"/></svg>'
+      + 'Share Bill as PNG'
+      + '</button>';
+
     out.innerHTML = warn
       +'<div class="stats">'
       +'<div class="stat"><small>Per unit rate</small><b>Rs '+nf.format(per)+'</b></div>'
@@ -179,7 +237,168 @@ button:focus-visible{outline:3px solid var(--teal);outline-offset:2px}
       +'<div class="people">'+person('a',n1,u1,l1,f1,b1)+person('b',n2,u2,l2,f2,b2)+'</div>'
       +'<div class="bar" role="img" aria-label="Bill ki taqseem"><span style="width:'+p1+'%;background:var(--a)"></span><span style="width:'+(100-p1)+'%;background:var(--b)"></span></div>'
       +'<div class="barlbl"><span>'+n1+' '+p1.toFixed(1)+'%</span><span>'+n2+' '+(100-p1).toFixed(1)+'%</span></div>'
-      +'<div class="total"><span>Bill with loss units</span><b>Rs '+nf.format(b1+b2)+'</b></div>';
+      +'<div class="total"><span>Bill with loss units</span><b>Rs '+nf.format(b1+b2)+'</b></div>'
+      + shareBtnHtml;
+
+    $('sharePngBtn').addEventListener('click', generateAndSharePNG);
+  }
+
+  function generateAndSharePNG(){
+    if(!currentData) return;
+    var d = currentData;
+
+    var canvas = document.createElement('canvas');
+    var w = 820;
+    var h = 940;
+    canvas.width = w;
+    canvas.height = h;
+    var ctx = canvas.getContext('2d');
+
+    function roundRect(x, y, rw, rh, rad, fill, stroke, strokeColor) {
+      ctx.beginPath();
+      ctx.roundRect(x, y, rw, rh, rad);
+      if(fill){ ctx.fillStyle = fill; ctx.fill(); }
+      if(stroke){ ctx.strokeStyle = strokeColor; ctx.lineWidth = stroke; ctx.stroke(); }
+    }
+
+    roundRect(0, 0, w, h, 28, '#ffffff', 2, '#d5dfdb');
+
+    roundRect(24, 24, w - 48, 90, 16, '#0f766e');
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 28px sans-serif';
+    ctx.fillText('BIJLI BILL CALCULATION REPORT', 46, 68);
+    ctx.font = '15px sans-serif';
+    ctx.fillStyle = '#d0f2ec';
+    ctx.fillText('Main Meter se Sub-Meters ki mukammal taqseem', 46, 94);
+
+    var cardY = 134;
+    var boxW = (w - 48 - 20) / 3;
+    var stats = [
+      { t: 'Per Unit Rate', v: 'Rs ' + nf.format(d.per) },
+      { t: 'Bill (Without Loss)', v: 'Rs ' + nf.format(d.tbill) },
+      { t: 'Loss Units', v: uf.format(d.loss) + ' units' }
+    ];
+    stats.forEach(function(s, idx){
+      var bx = 24 + idx * (boxW + 10);
+      roundRect(bx, cardY, boxW, 82, 14, '#f6f9f7', 1.5, '#d5dfdb');
+      ctx.fillStyle = '#5d7176';
+      ctx.font = '14px sans-serif';
+      ctx.fillText(s.t, bx + 16, cardY + 30);
+      ctx.fillStyle = '#13262b';
+      ctx.font = 'bold 20px sans-serif';
+      ctx.fillText(s.v, bx + 16, cardY + 62);
+    });
+
+    var personY = 236;
+    var pCardW = (w - 48 - 16) / 2;
+    var pData = [
+      { name: d.n1, u: d.u1, l: d.l1, f: d.f1, b: d.b1, p: d.p1, b_noloss: d.u1 * d.per, col: '#0f766e', bg: '#f2fcf9' },
+      { name: d.n2, u: d.u2, l: d.l2, f: d.f2, b: d.b2, p: d.p2, b_noloss: d.u2 * d.per, col: '#c2410c', bg: '#fffaf6' }
+    ];
+
+    pData.forEach(function(p, idx){
+      var px = 24 + idx * (pCardW + 16);
+      roundRect(px, personY, pCardW, 350, 18, p.bg, 2, p.col);
+
+      ctx.fillStyle = p.col;
+      ctx.font = 'bold 22px sans-serif';
+      ctx.fillText(p.name, px + 20, personY + 36);
+
+      ctx.fillStyle = '#13262b';
+      ctx.font = 'bold 30px sans-serif';
+      ctx.fillText('Rs ' + nf.format(p.b), px + 20, personY + 74);
+
+      ctx.font = 'bold 15px sans-serif';
+      ctx.fillStyle = p.col;
+      ctx.fillText('Share: ' + p.p.toFixed(1) + '%', px + 20, personY + 100);
+
+      var rows = [
+        { label: 'Chalay huay Units:', val: uf.format(p.u) },
+        { label: 'Loss Units:', val: uf.format(p.l) },
+        { label: 'Total Units (inc. Loss):', val: uf.format(p.f) },
+        { label: 'Bill Without Loss:', val: 'Rs ' + nf.format(p.b_noloss) },
+        { label: 'Final Bill (With Loss):', val: 'Rs ' + nf.format(p.b) }
+      ];
+
+      var ly = personY + 130;
+      rows.forEach(function(r, ri){
+        ctx.strokeStyle = '#e2ebe7';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(px + 20, ly - 16);
+        ctx.lineTo(px + pCardW - 20, ly - 16);
+        ctx.stroke();
+
+        ctx.fillStyle = ri === 4 ? '#13262b' : '#5d7176';
+        ctx.font = (ri === 4 ? 'bold ' : '') + '15px sans-serif';
+        ctx.fillText(r.label, px + 20, ly);
+
+        ctx.fillStyle = ri === 4 ? p.col : '#13262b';
+        ctx.font = 'bold 15px sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText(r.val, px + pCardW - 20, ly);
+        ctx.textAlign = 'left';
+
+        ly += 42;
+      });
+    });
+
+    var barY = 610;
+    ctx.fillStyle = '#5d7176';
+    ctx.font = 'bold 15px sans-serif';
+    ctx.fillText('Distribution & Percentage Ratio:', 28, barY + 16);
+
+    ctx.textAlign = 'right';
+    ctx.font = 'bold 15px sans-serif';
+    ctx.fillStyle = '#0f766e';
+    ctx.fillText(d.n1 + ' (' + d.p1.toFixed(1) + '%)', w / 2 - 10, barY + 16);
+    ctx.textAlign = 'left';
+    ctx.fillStyle = '#c2410c';
+    ctx.fillText(d.n2 + ' (' + d.p2.toFixed(1) + '%)', w / 2 + 10, barY + 16);
+
+    roundRect(24, barY + 28, w - 48, 22, 11, '#e5eae7');
+    var w1 = ((w - 48) * (d.p1 / 100));
+    roundRect(24, barY + 28, w1, 22, 11, '#0f766e');
+    roundRect(24 + w1, barY + 28, (w - 48) - w1, 22, 11, '#c2410c');
+
+    var totalY = 684;
+    roundRect(24, totalY, w - 48, 96, 18, '#13262b');
+    ctx.fillStyle = '#a6b8be';
+    ctx.font = '16px sans-serif';
+    ctx.fillText('Grand Total (Bill with Loss Units)', 46, totalY + 42);
+    ctx.font = '14px sans-serif';
+    ctx.fillText('Main Meter Units: ' + uf.format(d.mu) + ' | Main Bill: Rs ' + nf.format(d.bill), 46, totalY + 70);
+
+    ctx.fillStyle = '#2dd4bf';
+    ctx.font = 'bold 34px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.fillText('Rs ' + nf.format(d.totalFinal), w - 46, totalY + 60);
+    ctx.textAlign = 'left';
+
+    ctx.fillStyle = '#83969b';
+    ctx.font = '13px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('Generated via Bijli Bill Calculator • ' + new Date().toLocaleDateString('en-GB'), w / 2, 820);
+    ctx.textAlign = 'left';
+
+    canvas.toBlob(function(blob){
+      if(!blob) return;
+      var file = new File([blob], 'Bijli_Bill_Calculation.png', { type: 'image/png' });
+
+      if(navigator.canShare && navigator.canShare({ files: [file] })){
+        navigator.share({
+          files: [file]
+        }).catch(function(err){
+          console.log('Share dismissed or failed:', err);
+        });
+      } else {
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'Bijli_Bill_Calculation.png';
+        a.click();
+        alert('Bill PNG image download ho chuki hai. Aap isay WhatsApp par share kar sakte hain.');
+      }
+    }, 'image/png');
   }
 
   ids.forEach(function(i){$(i).addEventListener('input',render)});
